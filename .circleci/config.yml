@@ -5,27 +5,89 @@ version: 2.1
 # Define a job to be invoked later in a workflow.
 # See: https://circleci.com/docs/jobs-steps/#jobs-overview & https://circleci.com/docs/configuration-reference/#jobs
 jobs:
-  say-hello:
+  build-and-test:
     # Specify the execution environment. You can specify an image from Docker Hub or use one of our convenience images from CircleCI's Developer Hub.
     # See: https://circleci.com/docs/executor-intro/ & https://circleci.com/docs/configuration-reference/#executor-job
     docker:
       # Specify the version you desire here
-      # See: https://circleci.com/developer/images/image/cimg/base
-      - image: cimg/base:current
+      # See: https://circleci.com/developer/images/image/cimg/node
+      - image: cimg/node:current  # Node.js image with npm and yarn
 
     # Add steps to the job
     # See: https://circleci.com/docs/jobs-steps/#steps-overview & https://circleci.com/docs/configuration-reference/#steps
     steps:
-      # Checkout the code as the first step.
+      # Step 1: Checkout the code as the first step.
       - checkout
+
+      # Step 2: Spin up environment (optional, adjust as needed)
       - run:
-          name: "Say hello"
-          command: "echo Hello, World!"
+          name: Spin up environment
+          command: echo "Environment setup complete"
+
+      # Step 3: Prepare Environment Variables
+      - run:
+          name: Prepare Environment Variables
+          command: |
+            export NODE_ENV=development
+            echo "NODE_ENV set to development"
+
+      # Step 4: Check for package.json file
+      - run:
+          name: Checking for package.json
+          command: |
+            if [ -f package.json ]; then
+              echo "package.json found"
+            else
+              echo "package.json not found, exiting"
+              exit 1
+            fi
+
+      # Step 5: Restore cache (for dependencies)
+      - restore_cache:
+          keys:
+            - yarn-cache-{{ checksum "yarn.lock" }}
+            # Restores dependencies cache to speed up the build if available
+
+      # Step 6: Install Dependencies
+      - run:
+          name: Install Dependencies
+          command: yarn install
+          # Installs the necessary dependencies with Yarn
+
+      # Step 7: Save cache
+      - save_cache:
+          paths:
+            - ~/.cache/yarn
+          key: yarn-cache-{{ checksum "yarn.lock" }}
+          # Saves Yarn cache for future builds
+
+      # Step 8: Determine lockfile type
+      - run:
+          name: Determine lockfile
+          command: |
+            if [ -f yarn.lock ]; then
+              echo "Using yarn.lock"
+            else
+              echo "Using package-lock.json"
+            fi
+
+      # Step 9: Remove temporary links
+      - run:
+          name: Remove temporary links
+          command: |
+            echo "Removing temporary links (if any)"
+            # Additional cleanup commands can go here
+
+      # Step 10: Run Tests
+      - run:
+          name: Run Tests
+          command: yarn test
+          # Runs the test command defined in your package.json
 
 # Orchestrate jobs using workflows
 # See: https://circleci.com/docs/workflows/ & https://circleci.com/docs/configuration-reference/#workflows
 workflows:
-  say-hello-workflow: # This is the name of the workflow, feel free to change it to better match your workflow.
+  build-and-test-workflow: # This is the name of the workflow, feel free to change it.
     # Inside the workflow, you define the jobs you want to run.
     jobs:
-      - say-hello
+      - build-and-test
