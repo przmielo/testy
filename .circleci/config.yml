@@ -3,42 +3,44 @@ version: 2.1
 jobs:
   build-and-test:
     docker:
-      - image: cimg/node:current  # Use a CircleCI Node.js image
+      - image: cimg/node:current
 
     steps:
-      - checkout  # Step to check out your code from GitHub
+      - checkout
 
       - run:
-          name: Change Directory to main
-          command: cd main
-          # Change to the 'main' directory where package.json is located
+          name: List Files at Root Level
+          command: ls -la
+          # Lists files in the root to check if 'main' is present
 
       - run:
-          name: List Files in main Directory
+          name: Checking for main Directory
           command: |
-            cd main
-            ls -la  # Lists all files in the 'main' directory to confirm the presence of package.json
-
-      - run:
-          name: Checking for package.json
-          command: |
-            cd main
-            if [ -f package.json ]; then
-              echo "package.json found"
+            if [ -d main ]; then
+              echo "main directory found"
             else
-              echo "package.json not found, exiting"
+              echo "main directory not found, exiting"
+              exit 1
+            fi
+
+      - run:
+          name: Checking for package.json in main
+          command: |
+            if [ -f main/package.json ]; then
+              echo "package.json found in main"
+            else
+              echo "package.json not found in main, exiting"
               exit 1
             fi
 
       - restore_cache:
           keys:
             - yarn-cache-{{ checksum "main/yarn.lock" }}
-            # Adjusted cache key to check for yarn.lock in the 'main' directory
 
       - run:
           name: Install Dependencies
           command: |
-            cd main
+            cd main && \
             if [ -f yarn.lock ]; then
               yarn install
             else
@@ -50,12 +52,11 @@ jobs:
           paths:
             - ~/.cache/yarn
           key: yarn-cache-{{ checksum "main/yarn.lock" }}
-          # Saves Yarn cache for future builds
 
       - run:
           name: Run Tests
           command: |
-            cd main
+            cd main && \
             if [ -f yarn.lock ]; then
               yarn test
             else
