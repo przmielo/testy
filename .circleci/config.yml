@@ -31,16 +31,6 @@ jobs:
             export NODE_ENV=development
             echo "NODE_ENV set to development"
 
-      # Step 4: Check for package.json file
-      - run:
-          name: Checking for package.json
-          command: |
-            if [ -f package.json ]; then
-              echo "package.json found"
-            else
-              echo "package.json not found, exiting"
-              exit 1
-            fi
 
       # Step 5: Restore cache (for dependencies)
       - restore_cache:
