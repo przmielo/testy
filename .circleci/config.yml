@@ -3,45 +3,65 @@ version: 2.1
 jobs:
   build-and-test:
     docker:
-      - image: cimg/node:current
+      - image: cimg/node:current  # Use a CircleCI Node.js image
 
     steps:
-      - checkout  # Ensure the code is checked out from the repository
+      - checkout  # Step to check out your code from GitHub
 
       - run:
-          name: Spin up environment
-          command: echo "Environment setup complete"
+          name: Change Directory to main
+          command: cd main
+          # Change to the 'main' directory where package.json is located
 
       - run:
-          name: Prepare Environment Variables
+          name: List Files in main Directory
           command: |
-            export NODE_ENV=development
-            echo "NODE_ENV set to development"
+            cd main
+            ls -la  # Lists all files in the 'main' directory to confirm the presence of package.json
+
+      - run:
+          name: Checking for package.json
+          command: |
+            cd main
+            if [ -f package.json ]; then
+              echo "package.json found"
+            else
+              echo "package.json not found, exiting"
+              exit 1
+            fi
+
+      - restore_cache:
+          keys:
+            - yarn-cache-{{ checksum "main/yarn.lock" }}
+            # Adjusted cache key to check for yarn.lock in the 'main' directory
 
       - run:
           name: Install Dependencies
           command: |
-            echo "Installing dependencies"
-            npm install
+            cd main
+            if [ -f yarn.lock ]; then
+              yarn install
+            else
+              npm install
+            fi
+          # Installs dependencies using yarn if yarn.lock is present in the 'main' directory, otherwise npm
+
+      - save_cache:
+          paths:
+            - ~/.cache/yarn
+          key: yarn-cache-{{ checksum "main/yarn.lock" }}
+          # Saves Yarn cache for future builds
 
       - run:
           name: Run Tests
           command: |
-            echo "Running tests"
-            npm test
-
-      - run:
-          name: Remove temporary links
-          command: |
-            echo "Removing temporary links (if any)"
-            # Add any commands needed to clean up links here
-
-      - run:
-          name: Cleanup Workspace
-          command: |
-            echo "Cleaning up workspace"
-            rm -rf node_modules
-            echo "Workspace cleaned"
+            cd main
+            if [ -f yarn.lock ]; then
+              yarn test
+            else
+              npm test
+            fi
+          # Runs tests based on the available package manager in the 'main' directory
 
 workflows:
   build-and-test-workflow:
