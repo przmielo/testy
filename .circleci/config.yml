@@ -6,7 +6,7 @@ jobs:
       - image: cimg/node:current
 
     steps:
-      - checkout  # Ensure te code is checked out from the repository
+      - checkout  # Ensure the code is checked out from the repository
 
       - run:
           name: Spin up environment
@@ -19,10 +19,29 @@ jobs:
             echo "NODE_ENV set to development"
 
       - run:
+          name: Install Dependencies
+          command: |
+            echo "Installing dependencies"
+            npm install
+
+      - run:
+          name: Run Tests
+          command: |
+            echo "Running tests"
+            npm test
+
+      - run:
           name: Remove temporary links
           command: |
             echo "Removing temporary links (if any)"
+            # Add any commands needed to clean up links here
 
+      - run:
+          name: Cleanup Workspace
+          command: |
+            echo "Cleaning up workspace"
+            rm -rf node_modules
+            echo "Workspace cleaned"
 
 workflows:
   build-and-test-workflow:
