@@ -1,57 +1,54 @@
-# Use the latest 2.1 version of CircleCI pipeline process engine.
-# See: https://circleci.com/docs/configuration-reference
 version: 2.1
 
-# Define a job to be invoked later in a workflow.
-# See: https://circleci.com/docs/jobs-steps/#jobs-overview & https://circleci.com/docs/configuration-reference/#jobs
 jobs:
   build-and-test:
-    # Specify the execution environment. You can specify an image from Docker Hub or use one of our convenience images from CircleCI's Developer Hub.
-    # See: https://circleci.com/docs/executor-intro/ & https://circleci.com/docs/configuration-reference/#executor-job
     docker:
-      # Specify the version you desire here
-      # See: https://circleci.com/developer/images/image/cimg/node
-      - image: cimg/node:current  # Node.js image with npm and yarn
+      - image: cimg/node:current
 
-    # Add steps to the job
-    # See: https://circleci.com/docs/jobs-steps/#steps-overview & https://circleci.com/docs/configuration-reference/#steps
     steps:
-      # Step 1: Checkout the code as the first step.
-      - checkout
+      - checkout  # Ensure the code is checked out from the repository
 
-      # Step 2: Spin up environment (optional, adjust as needed)
       - run:
           name: Spin up environment
           command: echo "Environment setup complete"
 
-      # Step 3: Prepare Environment Variables
       - run:
           name: Prepare Environment Variables
           command: |
             export NODE_ENV=development
             echo "NODE_ENV set to development"
 
+      - run:
+          name: Checking for package.json
+          command: |
+            if [ -f package.json ]; then
+              echo "package.json found"
+            else
+              echo "package.json not found, exiting"
+              exit 1
+            fi
 
-      # Step 5: Restore cache (for dependencies)
       - restore_cache:
           keys:
-            - yarn-cache-{{ checksum "yarn.lock" }}
-            # Restores dependencies cache to speed up the build if available
+            - yarn-cache-{{ checksum "package-lock.json" }}
+            # Updated to use package-lock.json if yarn.lock is not available
 
-      # Step 6: Install Dependencies
       - run:
           name: Install Dependencies
-          command: yarn install
-          # Installs the necessary dependencies with Yarn
+          command: |
+            if [ -f yarn.lock ]; then
+              yarn install
+            else
+              npm install
+            fi
+          # Installs dependencies using yarn if yarn.lock is present, otherwise npm
 
-      # Step 7: Save cache
       - save_cache:
           paths:
             - ~/.cache/yarn
-          key: yarn-cache-{{ checksum "yarn.lock" }}
-          # Saves Yarn cache for future builds
+          key: yarn-cache-{{ checksum "package-lock.json" }}
+          # Update caching based on the correct lockfile
 
-      # Step 8: Determine lockfile type
       - run:
           name: Determine lockfile
           command: |
@@ -61,23 +58,22 @@ jobs:
               echo "Using package-lock.json"
             fi
 
-      # Step 9: Remove temporary links
       - run:
           name: Remove temporary links
           command: |
             echo "Removing temporary links (if any)"
-            # Additional cleanup commands can go here
 
-      # Step 10: Run Tests
       - run:
           name: Run Tests
-          command: yarn test
-          # Runs the test command defined in your package.json
+          command: |
+            if [ -f yarn.lock ]; then
+              yarn test
+            else
+              npm test
+            fi
+          # Run tests based on the available package manager
 
-# Orchestrate jobs using workflows
-# See: https://circleci.com/docs/workflows/ & https://circleci.com/docs/configuration-reference/#workflows
 workflows:
-  build-and-test-workflow: # This is the name of the workflow, feel free to change it.
-    # Inside the workflow, you define the jobs you want to run.
+  build-and-test-workflow:
     jobs:
       - build-and-test
