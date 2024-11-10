@@ -1,9 +1,9 @@
 version: 2.1
 
 jobs:
-  basic-build:
+  basic-build-and-test:
     docker:
-      - image: cimg/base:stable  # Basic image with minimal dependencies
+      - image: cimg/base:stable  # Basic CircleCI image
 
     steps:
       # Step 1: Checkout the code from the repository
@@ -21,7 +21,7 @@ jobs:
           command: env
           # Lists all environment variables for debugging purposes
 
-      # Step 4: Create a Sample File
+      # Step 4: Create a Sample File (for testing purposes)
       - run:
           name: Create Sample File
           command: |
@@ -37,7 +37,38 @@ jobs:
             - sample.txt
           # Stores the `sample.txt` file as an artifact for later access
 
-      # Step 6: Print Disk Space and Memory Usage
+      # Step 6: Run Basic Tests
+      - run:
+          name: Run Basic Tests
+          command: |
+            # Test 1: Check if sample.txt exists
+            if [ -f sample.txt ]; then
+              echo "Test 1 Passed: sample.txt exists."
+            else
+              echo "Test 1 Failed: sample.txt does not exist."
+              exit 1
+            fi
+
+            # Test 2: Check if sample.txt contains specific text
+            if grep -q "This is a sample file" sample.txt; then
+              echo "Test 2 Passed: sample.txt contains the expected text."
+            else
+              echo "Test 2 Failed: sample.txt does not contain the expected text."
+              exit 1
+            fi
+
+            # Test 3: Check if sample.txt was created within the last minute
+            creation_time=$(stat -c %Y sample.txt)
+            current_time=$(date +%s)
+            time_diff=$((current_time - creation_time))
+            if [ "$time_diff" -le 60 ]; then
+              echo "Test 3 Passed: sample.txt was created within the last minute."
+            else
+              echo "Test 3 Failed: sample.txt was not created recently."
+              exit 1
+            fi
+
+      # Step 7: Print Disk Space and Memory Usage
       - run:
           name: Check System Resources
           command: |
@@ -45,7 +76,7 @@ jobs:
             free -m
           # Prints disk space and memory usage for debugging system resources
 
-      # Step 7: Display CircleCI Job Information
+      # Step 8: Display CircleCI Job Information
       - run:
           name: Display Job Info
           command: |
@@ -55,6 +86,6 @@ jobs:
           # Prints CircleCI-specific environment variables for job tracking
 
 workflows:
-  basic-workflow:
+  build-and-test-workflow:
     jobs:
-      - basic-build
+      - basic-build-and-test
