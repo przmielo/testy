@@ -1,64 +1,60 @@
 version: 2.1
 
 jobs:
-  build-and-test:
+  basic-build:
     docker:
-      - image: cimg/node:current
+      - image: cimg/base:stable  # Basic image with minimal dependencies
 
     steps:
+      # Step 1: Checkout the code from the repository
       - checkout
 
+      # Step 2: List all files to confirm checkout
       - run:
-          name: List All Files Recursively
+          name: List All Files in Root
           command: ls -laR
-          # Recursively lists all files and directories to understand the project structure
+          # Recursively list all files to verify the structure after checkout
 
+      # Step 3: Display Environment Variables
       - run:
-          name: Check for package.json
-          command: |
-            if [ -f package.json ]; then
-              echo "package.json found in root"
-            elif [ -f main/package.json ]; then
-              echo "package.json found in main directory"
-            else
-              echo "package.json not found, exiting"
-              exit 1
-            fi
+          name: Display Environment Variables
+          command: env
+          # Lists all environment variables for debugging purposes
 
-      - restore_cache:
-          keys:
-            - yarn-cache-{{ checksum "main/yarn.lock" }}
-
+      # Step 4: Create a Sample File
       - run:
-          name: Install Dependencies
+          name: Create Sample File
           command: |
-            if [ -f main/package.json ]; then
-              cd main && yarn install
-            elif [ -f package.json ]; then
-              yarn install
-            else
-              echo "No package.json found, skipping dependency installation"
-              exit 1
-            fi
+            echo "This is a sample file created during the build" > sample.txt
+            echo "File created at $(date)" >> sample.txt
+            cat sample.txt
+          # Creates a sample file and displays its contents
 
-      - save_cache:
+      # Step 5: Archive the File as an Artifact
+      - persist_to_workspace:
+          root: .
           paths:
-            - ~/.cache/yarn
-          key: yarn-cache-{{ checksum "main/yarn.lock" }}
+            - sample.txt
+          # Stores the `sample.txt` file as an artifact for later access
 
+      # Step 6: Print Disk Space and Memory Usage
       - run:
-          name: Run Tests
+          name: Check System Resources
           command: |
-            if [ -f main/package.json ]; then
-              cd main && yarn test
-            elif [ -f package.json ]; then
-              yarn test
-            else
-              echo "No package.json found, cannot run tests"
-              exit 1
-            fi
+            df -h
+            free -m
+          # Prints disk space and memory usage for debugging system resources
+
+      # Step 7: Display CircleCI Job Information
+      - run:
+          name: Display Job Info
+          command: |
+            echo "Job ID: ${CIRCLE_WORKFLOW_ID}"
+            echo "Job Number: ${CIRCLE_BUILD_NUM}"
+            echo "Branch: ${CIRCLE_BRANCH}"
+          # Prints CircleCI-specific environment variables for job tracking
 
 workflows:
-  build-and-test-workflow:
+  basic-workflow:
     jobs:
-      - build-and-test
+      - basic-build
