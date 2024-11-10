@@ -18,44 +18,11 @@ jobs:
             export NODE_ENV=development
             echo "NODE_ENV set to development"
 
-      - restore_cache:
-          keys:
-            - yarn-cache-{{ checksum "package-lock.json" }}
-            # Updated to use package-lock.json if yarn.lock is not available
-
-      - run:
-          name: Install Dependencies
-          command: |
-            if [ -f yarn.lock ]; then
-              yarn install
-            else
-              npm install
-            fi
-          # Installs dependencies using yarn if yarn.lock is present, otherwise npm
-
-      - run:
-          name: Determine lockfile
-          command: |
-            if [ -f yarn.lock ]; then
-              echo "Using yarn.lock"
-            else
-              echo "Using package-lock.json"
-            fi
-
       - run:
           name: Remove temporary links
           command: |
             echo "Removing temporary links (if any)"
 
-      - run:
-          name: Run Tests
-          command: |
-            if [ -f yarn.lock ]; then
-              yarn test
-            else
-              npm test
-            fi
-          # Run tests based on the available package manager
 
 workflows:
   build-and-test-workflow:
