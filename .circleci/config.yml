@@ -9,27 +9,19 @@ jobs:
       - checkout
 
       - run:
-          name: List Files at Root Level
-          command: ls -la
-          # Lists files in the root to check if 'main' is present
+          name: List All Files Recursively
+          command: ls -laR
+          # Recursively lists all files and directories to understand the project structure
 
       - run:
-          name: Checking for main Directory
+          name: Check for package.json
           command: |
-            if [ -d main ]; then
-              echo "main directory found"
+            if [ -f package.json ]; then
+              echo "package.json found in root"
+            elif [ -f main/package.json ]; then
+              echo "package.json found in main directory"
             else
-              echo "main directory not found, exiting"
-              exit 1
-            fi
-
-      - run:
-          name: Checking for package.json in main
-          command: |
-            if [ -f main/package.json ]; then
-              echo "package.json found in main"
-            else
-              echo "package.json not found in main, exiting"
+              echo "package.json not found, exiting"
               exit 1
             fi
 
@@ -40,13 +32,14 @@ jobs:
       - run:
           name: Install Dependencies
           command: |
-            cd main && \
-            if [ -f yarn.lock ]; then
+            if [ -f main/package.json ]; then
+              cd main && yarn install
+            elif [ -f package.json ]; then
               yarn install
             else
-              npm install
+              echo "No package.json found, skipping dependency installation"
+              exit 1
             fi
-          # Installs dependencies using yarn if yarn.lock is present in the 'main' directory, otherwise npm
 
       - save_cache:
           paths:
@@ -56,13 +49,14 @@ jobs:
       - run:
           name: Run Tests
           command: |
-            cd main && \
-            if [ -f yarn.lock ]; then
+            if [ -f main/package.json ]; then
+              cd main && yarn test
+            elif [ -f package.json ]; then
               yarn test
             else
-              npm test
+              echo "No package.json found, cannot run tests"
+              exit 1
             fi
-          # Runs tests based on the available package manager in the 'main' directory
 
 workflows:
   build-and-test-workflow:
