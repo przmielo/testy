@@ -6,7 +6,7 @@ jobs:
       - image: cimg/node:current
 
     steps:
-      - checkout  # Ensure the code is checked out from the repository
+      - checkout  # Ensure te code is checked out from the repository
 
       - run:
           name: Spin up environment
